@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แสดงค่า PM2.5 และ AQI แบบเรียลไทม์</title>
+</head>
+<body>
+    <h1>ค่า PM2.5 และ AQI ล่าสุด</h1>
+    <p>ค่า PM2.5 ล่าสุด: <span id="pm25"></span></p>
+    <p>ค่า AQI: <span id="aqi"></span></p>
+
+    <script>
+        // ฟังก์ชันดึงข้อมูลจาก Google Sheets ที่แชร์เป็นหน้าเว็บ
+        async function fetchData() {
+            const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYXxtx0dVDEsi6c5l-vPzbhQbNde8ef0EkA_Ga3zcjL7EH77iARS6Mk4Tm1Gt0mKHyej5DlJTHnewG/pubhtml?gid=1900100166&single=true';
+
+            try {
+                const response = await fetch(url);
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const rows = doc.querySelectorAll('table tr');
+                const data = [];
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length > 0) {
+                        const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+                        data.push(rowData);
+                    }
+                });
+
+                return data;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                return [];
+            }
+        }
+
+        // ฟังก์ชันคำนวณ AQI จาก PM2.5
+        function calculateAQI(pm25) {
+            if (pm25 <= 12) {
+                return ((50 - 0) / (12 - 0)) * (pm25 - 0) + 0;
+            } else if (pm25 <= 35.4) {
+                return ((100 - 51) / (35.4 - 12.1)) * (pm25 - 12.1) + 51;
+            } else if (pm25 <= 55.4) {
+                return ((150 - 101) / (55.4 - 35.5)) * (pm25 - 35.5) + 101;
+            } else if (pm25 <= 150.4) {
+                return ((200 - 151) / (150.4 - 55.5)) * (pm25 - 55.5) + 151;
+            } else if (pm25 <= 250.4) {
+                return ((300 - 201) / (250.4 - 150.5)) * (pm25 - 150.5) + 201;
+            } else if (pm25 <= 350.4) {
+                return ((400 - 301) / (350.4 - 250.5)) * (pm25 - 250.5) + 301;
+            } else if (pm25 <= 500.4) {
+                return ((500 - 401) / (500.4 - 350.5)) * (pm25 - 350.5) + 401;
+            } else {
+                return 500;
+            }
+        }
+
+        // ฟังก์ชันอัปเดตข้อมูล
+        async function updateData() {
+            const rows = await fetchData();
+            if (rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                const lastPm25 = parseFloat(lastRow[2]); // คอลัมน์ C (index 2)
+                const aqi = calculateAQI(lastPm25);
+
+                // อัปเดตค่าในหน้าเว็บ
+                document.getElementById("pm25").textContent = lastPm25;
+                document.getElementById("aqi").textContent = aqi.toFixed(2);
+            }
+        }
+
+        // อัปเดตข้อมูลทุก 5 วินาที (5000 มิลลิวินาที)
+        setInterval(updateData, 5000);
+
+        // อัปเดตข้อมูลครั้งแรกเมื่อโหลดหน้า
+        updateData();
+    </script>
+</body>
+</html>
