@@ -7,11 +7,12 @@
 </head>
 <body>
     <h1>ค่า PM2.5 และ AQI ล่าสุด</h1>
+    <p>วันที่: <span id="date"></span></p>
+    <p>อัพเดทเวลา: <span id="time"></span></p>
     <p>ค่า PM2.5 ล่าสุด: <span id="pm25"></span></p>
     <p>ค่า AQI: <span id="aqi"></span></p>
 
     <script>
-        // ฟังก์ชันดึงข้อมูลจาก Google Sheets ที่แชร์เป็นหน้าเว็บ
         async function fetchData() {
             const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYXxtx0dVDEsi6c5l-vPzbhQbNde8ef0EkA_Ga3zcjL7EH77iARS6Mk4Tm1Gt0mKHyej5DlJTHnewG/pubhtml?gid=1900100166&single=true';
 
@@ -38,7 +39,6 @@
             }
         }
 
-        // ฟังก์ชันคำนวณ AQI จาก PM2.5
         function calculateAQI(pm25) {
             if (pm25 <= 12) {
                 return ((50 - 0) / (12 - 0)) * (pm25 - 0) + 0;
@@ -59,24 +59,24 @@
             }
         }
 
-        // ฟังก์ชันอัปเดตข้อมูล
         async function updateData() {
             const rows = await fetchData();
             if (rows.length > 0) {
                 const lastRow = rows[rows.length - 1];
-                const lastPm25 = parseFloat(lastRow[2]); // คอลัมน์ C (index 2)
+
+                const date = lastRow[0]; // คอลัมน์ A (วันที่)
+                const time = lastRow[1]; // คอลัมน์ B (เวลา)
+                const lastPm25 = parseFloat(lastRow[2]); // คอลัมน์ C (PM2.5)
                 const aqi = calculateAQI(lastPm25);
 
-                // อัปเดตค่าในหน้าเว็บ
+                document.getElementById("date").textContent = date;
+                document.getElementById("time").textContent = time;
                 document.getElementById("pm25").textContent = lastPm25;
                 document.getElementById("aqi").textContent = aqi.toFixed(2);
             }
         }
 
-        // อัปเดตข้อมูลทุก 5 วินาที (5000 มิลลิวินาที)
         setInterval(updateData, 5000);
-
-        // อัปเดตข้อมูลครั้งแรกเมื่อโหลดหน้า
         updateData();
     </script>
 </body>
